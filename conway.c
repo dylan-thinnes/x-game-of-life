@@ -70,8 +70,10 @@ int main (int argc, char** argv) {
 
   win = XCreateSimpleWindow(
     dpy, RootWindow(dpy, screen),
-    100, 100, 500, 500,
-    1, WhitePixel(dpy, screen), BlackPixel(dpy, screen)
+    0, 0, 200, 200, // top-left corner, 200 by 200
+    0, // no border
+    WhitePixel(dpy, screen), // white foreground
+    BlackPixel(dpy, screen) // black background
   );
 
   graphics_context = XCreateGC(dpy, win, 0, 0);
@@ -108,25 +110,24 @@ int main (int argc, char** argv) {
         case KeyPress:
           char latin_mapping[2];
           XLookupString(&event.xkey, latin_mapping, 2, NULL, NULL);
-          printf("%d\n", latin_mapping[0]);
           switch (latin_mapping[0]) {
-            // Break if input char is 'q' or ESC
-            case 'q':
+            case 'q': // quit / escape
             case '\033':
               finished = 1;
               break;
-            case ' ':
+            case ' ': // pause
+            case 'p':
               paused = !paused;
               break;
-            case 'r':
+            case 'r': // restart / randomize
               randomize();
               redraw(dpy, &win, &graphics_context);
               break;
-            case 'k':
+            case 'j': // slow down
               interval += 10000000L;
               interval = interval < 1000000000L ? interval : 1000000000L;
               break;
-            case 'j':
+            case 'k': // speed up
               interval -= 10000000L;
               interval = interval > 10000000L ? interval : 10000000L;
               break;
