@@ -104,7 +104,7 @@ int main (int argc, char** argv) {
     while (XCheckWindowEvent(dpy, win, mask, &event)) {
       switch (event.type) {
         case Expose:
-          // Redraw on exposure
+          // Only start drawing on exposure
           exposed = 1;
           break;
         case KeyPress:
