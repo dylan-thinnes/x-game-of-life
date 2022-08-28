@@ -2,6 +2,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
+#include <stdint.h>
 
 int active_buffer = 0;
 int buffer[2][100][100];
@@ -84,24 +85,54 @@ int main (int argc, char** argv) {
   randomize();
 
   int finished = 0;
+  int exposed = 0;
+  int paused = 0;
+  uint64_t elapsed = 0;
+  uint64_t interval = 100000000L;
   while (!finished) {
+    // Sleep 10ms
+    struct timespec req, res;
+    req.tv_sec = 0;
+    req.tv_nsec = 10000000L;
+    res.tv_sec = 0;
+    res.tv_nsec = 0L;
+    nanosleep(&req, &res);
+    elapsed += req.tv_nsec - res.tv_nsec;
+
     while (XCheckWindowEvent(dpy, win, mask, &event)) {
       switch (event.type) {
         case Expose:
           // Redraw on exposure
-          redraw(dpy, &win, &graphics_context);
+          exposed = 1;
           break;
         case KeyPress:
-          // Break if input char is 'q' or ESC
           char latin_mapping[2];
           XLookupString(&event.xkey, latin_mapping, 2, NULL, NULL);
-          if (latin_mapping[0] == 'q' || latin_mapping[0] == '\033') {
-            finished = 1;
-            break;
+          printf("%d\n", latin_mapping[0]);
+          switch (latin_mapping[0]) {
+            // Break if input char is 'q' or ESC
+            case 'q':
+            case '\033':
+              finished = 1;
+              break;
+            case ' ':
+              paused = !paused;
+              break;
+            case 'r':
+              randomize();
+              redraw(dpy, &win, &graphics_context);
+              break;
+            case 'k':
+              interval += 10000000L;
+              interval = interval < 1000000000L ? interval : 1000000000L;
+              break;
+            case 'j':
+              interval -= 10000000L;
+              interval = interval > 10000000L ? interval : 10000000L;
+              break;
+            default:
+              break;
           }
-
-          step_state();
-          redraw(dpy, &win, &graphics_context);
         case ConfigureNotify:
           // Save window size
           if (event.xconfigure.window == win) {
@@ -114,6 +145,15 @@ int main (int argc, char** argv) {
           // Exit when window destroyed
           finished = 1;
           break;
+      }
+    }
+
+    // Every 100ms (10 ticks, step state and redraw)
+    if (elapsed > interval) {
+      elapsed -= interval;
+      if (exposed && !paused) {
+        step_state();
+        redraw(dpy, &win, &graphics_context);
       }
     }
   }
