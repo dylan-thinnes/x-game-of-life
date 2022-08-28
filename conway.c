@@ -84,6 +84,13 @@ int main (int argc, char** argv) {
   XSelectInput(dpy, win, mask);
   XMapWindow(dpy, win);
 
+  XIM xim = XOpenIM(dpy, NULL, NULL, NULL);
+  XIC xic = XCreateIC(xim,
+    XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+    XNClientWindow, win,
+    XNFocusWindow, win, NULL
+  );
+
   randomize();
 
   int finished = 0;
@@ -109,7 +116,7 @@ int main (int argc, char** argv) {
           break;
         case KeyPress:
           char latin_mapping[2];
-          XLookupString(&event.xkey, latin_mapping, 2, NULL, NULL);
+          Xutf8LookupString(xic, &event.xkey, latin_mapping, 2, NULL, NULL);
           switch (latin_mapping[0]) {
             case 'q': // quit / escape
             case '\033':
